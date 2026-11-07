@@ -1,0 +1,110 @@
+[hidden]{display:none!important}
+:root{--rock:#1e1813;--ink:#f4ead8;--gold:#f2c230;--cta:#27a844;--ctaD:#156b29;--line:#0d0a07}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--rock);touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%;height:100%}
+body{height:100%;overflow:hidden;color:var(--ink);font-family:"Hiragino Sans","Yu Gothic","Noto Sans JP",sans-serif;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+button,a{font-family:inherit;touch-action:manipulation;-webkit-tap-highlight-color:transparent;cursor:pointer}
+#stage{position:fixed;inset:0;width:100vw;height:100svh;display:block;touch-action:none}
+main{position:fixed;inset:0;height:100svh;overflow:hidden;pointer-events:none;display:flex;flex-direction:column}
+main button,main a,main #grid,main .how{pointer-events:auto}
+#fx{position:fixed;inset:0;pointer-events:none;z-index:4}
+.row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+
+/* 大事なボタンは広告の「今すぐプレイ」の緑だけ。下の厚みはこれ1つ */
+.cta{display:block;min-width:220px;min-height:58px;padding:0 28px;border:0;border-radius:14px;background:var(--cta);color:#fff;font-family:"RocknRoll One",sans-serif;font-size:24px;letter-spacing:.04em;box-shadow:0 5px 0 var(--ctaD);text-shadow:0 2px 0 rgba(0,0,0,.25);animation:cta 1.6s ease-in-out infinite}
+.cta:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ctaD)}
+.cta.small{min-height:48px;font-size:19px;min-width:160px;animation:none}
+@keyframes cta{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+.sub{min-height:44px;padding:0 14px;border:1.5px solid rgba(244,234,216,.55);border-radius:8px;background:rgba(20,15,11,.72);color:var(--ink);font-size:15px;font-weight:700;display:inline-flex;align-items:center;text-decoration:none}
+
+/* タイトル */
+#vTitle{justify-content:space-between;padding:max(34px,env(safe-area-inset-top)) 16px max(22px,env(safe-area-inset-bottom))}
+.logo{text-align:center;margin-top:1svh;transform:rotate(-2deg);position:relative;z-index:1}
+.logo .l1{display:inline-block;font-family:"RocknRoll One",sans-serif;font-size:20px;background:#fff;color:#111;padding:2px 10px 3px;transform:rotate(-1deg)}
+.logo h1{font-family:"RocknRoll One",sans-serif;font-weight:400;white-space:nowrap;font-size:min(18vw,84px);line-height:1.05;color:var(--gold);-webkit-text-stroke:7px var(--line);paint-order:stroke fill;letter-spacing:.02em;filter:drop-shadow(0 5px 0 #000)}
+.logo .l3{font-family:"Shippori Mincho B1",serif;font-weight:600;font-size:19px;margin-top:4px;color:#fff;text-shadow:0 2px 6px #000}
+.tbtns{display:flex;flex-direction:column;align-items:center;gap:14px}
+
+/* ステージ */
+#vStages{align-items:center;justify-content:center;gap:14px;padding:20px 16px;background:rgba(20,15,11,.82)}
+#vStages h2,.how h2{font-family:"RocknRoll One",sans-serif;font-weight:400;font-size:26px;color:var(--gold);-webkit-text-stroke:4px var(--line);paint-order:stroke fill}
+#grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:min(100%,420px)}
+#grid button{position:relative;aspect-ratio:3/5;border:2px solid #241c15;border-radius:4px;background:#3a2e25;overflow:hidden;padding:0}
+#grid button canvas{width:100%;height:100%;display:block}
+#grid button b{position:absolute;left:4px;top:2px;font-family:"RocknRoll One",sans-serif;font-weight:400;font-size:20px;color:#fff;-webkit-text-stroke:3px #000;paint-order:stroke fill}
+#grid button i{position:absolute;right:4px;bottom:4px;width:16px;height:16px;border-radius:50%;background:var(--gold);border:2px solid #7a5200}
+#grid button.lock{filter:grayscale(1) brightness(.45)}
+#grid button.lock b::after{content:"";}
+
+/* 遊び方（洞窟の壁に貼った紙） */
+#vHow{align-items:center;justify-content:center;padding:16px;background:rgba(20,15,11,.7)}
+.how{width:min(100%,420px);max-height:calc(100svh - 32px);background:#efe4cc;color:#2a2018;padding:20px 18px 14px;border-radius:2px;transform:rotate(-.6deg);box-shadow:0 10px 30px rgba(0,0,0,.6);display:flex;flex-direction:column;gap:10px}
+.how h2{text-align:left}
+.how .lead{font-size:15px;line-height:1.6;font-weight:700}
+#howList{list-style:none;display:flex;flex-direction:column;gap:8px}
+#howList li{display:flex;gap:10px;align-items:center;font-size:14px;line-height:1.5}
+
+#howList canvas{flex:none;width:44px;height:44px;background:#3a2e25;border-radius:3px}
+.how .cta{align-self:center;margin-top:4px}
+.how .foot{font-size:11px;color:#6b5d4f;line-height:1.5}
+.how .foot a{color:#6b5d4f}
+
+/* 遊ぶ画面 */
+.hud{display:grid;grid-template-columns:auto 1fr auto;grid-template-rows:auto auto;align-items:center;column-gap:8px;row-gap:2px;padding:max(8px,env(safe-area-inset-top)) 8px 0}
+.lvplate{grid-column:1;grid-row:1;width:44px;height:44px;display:grid;place-items:center;background:#8a7a66;border:2px solid #241c15;border-radius:3px;box-shadow:inset 0 2px 0 #b7a58b,inset 0 -3px 0 #6c5e4e}
+.lvplate b{font-family:"RocknRoll One",sans-serif;font-weight:400;font-size:22px;color:#2a2018;text-shadow:0 1px 0 #b7a58b}
+.cap{grid-column:1/4;grid-row:2;min-width:0;text-align:center;position:relative;padding:0 4px}
+.cap span{display:inline-block;font-family:"RocknRoll One",sans-serif;font-size:clamp(19px,6.4vw,28px);line-height:1.15;color:#fff;-webkit-text-stroke:6px #000;paint-order:stroke fill;transform:rotate(-2deg)}
+.cap span em{font-style:normal;color:#ffe14a}
+.cap i{position:absolute;left:6px;top:2px;font-style:normal;font-size:10px;line-height:1;padding:2px 4px;background:#f2f2f2;color:#555;border-radius:2px}
+.hbtns{grid-column:3;grid-row:1;display:flex;gap:6px}
+.ico{width:44px;height:44px;border:1.5px solid rgba(244,234,216,.5);border-radius:8px;background:rgba(20,15,11,.6);color:var(--ink);display:grid;place-items:center}
+.ico svg{width:22px;height:22px}
+
+#tutor{position:fixed;z-index:5;pointer-events:none;width:120px;display:flex;flex-direction:column;align-items:center;gap:2px}
+#tutor svg{width:54px;height:54px;animation:poke 1s ease-in-out infinite;filter:drop-shadow(0 3px 2px rgba(0,0,0,.5))}
+#tutor span{font-family:"RocknRoll One",sans-serif;font-size:18px;color:#fff;-webkit-text-stroke:5px #000;paint-order:stroke fill;white-space:nowrap}
+@keyframes poke{0%,100%{transform:translate(0,0)}50%{transform:translate(-6px,-8px)}}
+
+/* 決着（ドキュメンタリーの字幕） */
+#sheet{position:fixed;left:0;right:0;bottom:0;padding:0 16px max(18px,env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:10px;pointer-events:none}
+#sheet .sbtns{display:flex;flex-direction:column;align-items:center;gap:10px;pointer-events:auto}
+#narr{font-family:"Shippori Mincho B1",serif;font-weight:600;font-size:18px;line-height:1.5;color:#fff;background:rgba(0,0,0,.78);padding:8px 14px;text-align:center;max-width:100%}
+#stamp{position:fixed;left:50%;top:30%;transform:translate(-50%,-50%) rotate(-8deg);font-family:"RocknRoll One",sans-serif;font-size:min(13vw,56px);line-height:1.1;text-align:center;white-space:nowrap;color:#ffe14a;-webkit-text-stroke:8px #000;paint-order:stroke fill;filter:drop-shadow(0 6px 0 #000)}
+#stamp:empty{display:none}
+#stamp.on{animation:stamp .5s cubic-bezier(.2,.9,.3,1.3) both}
+@keyframes stamp{0%{transform:translate(-50%,-50%) rotate(-8deg) scale(2.4);opacity:0}100%{transform:translate(-50%,-50%) rotate(-8deg) scale(1);opacity:1}}
+
+/* 最後 */
+#vEnd{align-items:center;justify-content:center;gap:14px;padding:16px;background:rgba(20,15,11,.86)}
+.endbox{flex:0 1 auto;min-height:0;width:min(100%,420px);display:flex;justify-content:center}
+#endCv{width:100%;height:auto;max-height:calc(100svh - 210px);object-fit:contain;aspect-ratio:1/1;width:auto;max-width:100%}
+.ebtns{display:flex;flex-direction:column;align-items:center;gap:12px}
+
+#bMute{position:fixed;right:max(8px,env(safe-area-inset-right));top:max(8px,env(safe-area-inset-top));z-index:6;width:42px;height:42px;border:1.5px solid rgba(244,234,216,.45);border-radius:50%;background:rgba(20,15,11,.6);color:var(--ink);display:grid;place-items:center}
+#bMute svg{width:22px;height:22px}
+#bMute.on #mX,#bMute:not(.on) #mWave{display:none}
+body.playing #bMute{right:110px;width:44px;height:44px;border-radius:8px}
+
+/* ロード画面 */
+#boot{position:fixed;inset:0;z-index:20;background:var(--rock);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;transition:opacity .4s}
+#boot.gone{opacity:0;pointer-events:none}
+#boot svg{width:200px}
+#boot .pin{animation:pull 1.8s ease-in infinite}
+#boot .coins circle{animation:drop 1.8s ease-in infinite}
+#boot .coins circle:nth-child(2){animation-delay:.08s}#boot .coins circle:nth-child(3){animation-delay:.16s}
+@keyframes pull{0%,30%{transform:translateX(0)}60%,100%{transform:translateX(150px)}}
+@keyframes drop{0%,45%{transform:translateY(0);opacity:1}75%{transform:translateY(28px);opacity:1}100%{transform:translateY(28px);opacity:0}}
+#boot p{font-size:15px;font-weight:700;letter-spacing:.06em}
+.boot-bar{width:180px;height:6px;background:#3a2e25;border-radius:3px;overflow:hidden}
+.boot-bar i{display:block;height:100%;background:var(--gold);transform:scaleX(0);transform-origin:left;transition:transform .25s}
+#bootErr{position:fixed;inset:auto 8px 8px 8px;z-index:99;background:#fff;color:#b00;font:12px/1.4 monospace;white-space:pre-wrap;padding:10px;border-radius:8px}
+
+@media (max-height:700px){
+  .cap span{font-size:clamp(17px,5.8vw,24px)}
+  .cta{min-height:52px;font-size:21px}
+  #narr{font-size:16px}
+  .how{padding:14px 14px 10px;gap:7px}
+  #howList li{font-size:13px}
+  #howList canvas{width:36px;height:36px}
+}

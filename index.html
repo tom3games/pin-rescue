@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>広告で見たあのピン抜き | 広告のゲームが本当に遊べる</title>
+<meta name="description" content="スマホの広告で見た、ピンを抜いて金貨を勇者に届けるあのパズルが、ブラウザで本当に遊べる。水と溶岩で石を作り、魔物を沈め、爆弾で壁を壊す全12面。抜く順番をまちがえると、広告のあの失敗になる。ダウンロードなし・無料。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="広告で見たあのピン抜き、本当に遊べます">
+<meta property="og:description" content="広告で見たあのパズルを、広告どおりに遊べるようにした。ピンを抜く順番で、金貨が届くか、勇者が溶けるか。全12面・ダウンロードなし。">
+<meta property="og:image" content="https://tom3games.github.io/pin-rescue/og.png?v=1">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:url" content="https://tom3games.github.io/pin-rescue/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#1e1813">
+<link rel="icon" href="icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=RocknRoll+One&family=Shippori+Mincho+B1:wght@600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=1">
+</head>
+<body>
+<canvas id="stage"></canvas>
+<div id="fx"></div>
+
+<main id="vTitle" hidden>
+  <div class="logo">
+    <p class="l1" id="tl1"></p>
+    <h1 id="tl2"></h1>
+    <p class="l3" id="tl3"></p>
+  </div>
+  <div class="tbtns">
+    <button id="bStart" class="cta"></button>
+    <div class="row"><button id="bStages" class="sub"></button><button id="bHow" class="sub"></button><button id="bLang" class="sub"></button></div>
+  </div>
+</main>
+
+<main id="vStages" hidden>
+  <h2 id="stH"></h2>
+  <div id="grid"></div>
+  <button id="bStBack" class="sub"></button>
+</main>
+
+<main id="vHow" hidden>
+  <div class="how">
+    <h2 id="howH"></h2>
+    <p class="lead" id="howLead"></p>
+    <ul id="howList"></ul>
+    <button id="bHowClose" class="cta small"></button>
+    <p class="foot"><span id="howFoot"></span> <a id="lPrivacy" href="privacy.html" target="_blank" rel="noopener"></a></p>
+  </div>
+</main>
+
+<main id="vPlay" hidden>
+  <div class="hud">
+    <div class="lvplate"><b id="lvNum"></b></div>
+    <div class="cap"><i id="adTag"></i><span id="capT"></span></div>
+    <div class="hbtns"><button id="bRestart" class="ico" aria-label="restart"><svg viewBox="0 0 32 32"><path d="M16 6a10 10 0 1 1-9.4 6.6" fill="none" stroke="currentColor" stroke-width="3.4"/><path d="M4 5l3.4 8.6L15 9.4z" fill="currentColor"/></svg></button><button id="bMenu" class="ico" aria-label="menu"><svg viewBox="0 0 32 32"><path d="M7 9h18M7 16h18M7 23h18" stroke="currentColor" stroke-width="3.4"/></svg></button></div>
+  </div>
+  <div id="tutor" hidden><svg viewBox="0 0 64 64"><path d="M26 58c-6-6-12-13-14-18-1-3 2-5 5-3l6 5V12c0-3 2-5 4.5-5S32 9 32 12v15c0-3 2-4 4.4-4S41 25 41 28c0-2.6 2-4 4.3-4s4.2 1.6 4.2 4.4c.3-2 2-3 3.8-2.8 2 .2 3.4 2 3.4 4.2V41c0 7-3 12-6 17z" fill="#fff" stroke="#1e1813" stroke-width="3" stroke-linejoin="round"/></svg><span id="tutorT"></span></div>
+  <div id="sheet" hidden>
+    <div id="stamp"></div>
+    <p id="narr"></p>
+    <div class="sbtns"><button id="bNext" class="cta"></button><div class="row"><button id="bSave" class="sub"></button><a id="bPost" class="sub" target="_blank" rel="noopener"></a></div></div>
+  </div>
+</main>
+
+<main id="vEnd" hidden>
+  <div class="endbox"><canvas id="endCv" width="1080" height="1080"></canvas></div>
+  <div class="ebtns"><div class="row"><button id="bEndSave" class="sub"></button><a id="bEndPost" class="sub" target="_blank" rel="noopener"></a></div><button id="bAgain" class="cta"></button></div>
+</main>
+
+<button id="bMute" aria-label="sound" hidden><svg viewBox="0 0 32 32"><path d="M5 12h6l7-6v20l-7-6H5z" fill="currentColor"/><path id="mWave" d="M22 11q4 5 0 10M25 8q7 8 0 16" fill="none" stroke="currentColor" stroke-width="2.4"/><path id="mX" d="M22 12l8 8M30 12l-8 8" stroke="currentColor" stroke-width="2.6"/></svg></button>
+
+<div id="boot">
+  <svg viewBox="0 0 200 160" aria-hidden="true">
+    <rect x="20" y="40" width="160" height="22" fill="#8a7a66" stroke="#241c15" stroke-width="3"/>
+    <rect x="20" y="96" width="160" height="40" fill="#8a7a66" stroke="#241c15" stroke-width="3"/>
+    <g class="pin"><rect x="30" y="70" width="140" height="12" rx="6" fill="#e9b53a" stroke="#3d2a08" stroke-width="2.5"/><circle cx="176" cy="76" r="11" fill="none" stroke="#3d2a08" stroke-width="9"/><circle cx="176" cy="76" r="11" fill="none" stroke="#e9b53a" stroke-width="5"/></g>
+    <g class="coins"><circle cx="60" cy="88" r="6" fill="#f2c230" stroke="#7a5200" stroke-width="2"/><circle cx="90" cy="88" r="6" fill="#f2c230" stroke="#7a5200" stroke-width="2"/><circle cx="120" cy="88" r="6" fill="#f2c230" stroke="#7a5200" stroke-width="2"/></g>
+  </svg>
+  <p id="bootMsg">ピンを磨いています</p>
+  <div class="boot-bar"><i id="bootBar"></i></div>
+</div>
+
+<script>
+(function(){var o={passive:false};
+['gesturestart','gesturechange','gestureend'].forEach(function(n){document.addEventListener(n,function(e){e.preventDefault()},o)});
+document.addEventListener('touchmove',function(e){if(e.touches&&e.touches.length>1)e.preventDefault()},o);
+var l=0;document.addEventListener('touchend',function(e){var n=Date.now();if(n-l<300&&!(e.target.closest&&e.target.closest('button,a')))e.preventDefault();l=n},o);
+document.addEventListener('dblclick',function(e){e.preventDefault()},o);
+window.addEventListener('wheel',function(e){if(e.ctrlKey)e.preventDefault()},o);
+window.addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&['+','-','=','0',';'].indexOf(e.key)>=0)e.preventDefault()});
+try{if((localStorage.getItem('pinr_lang')||((navigator.language||'ja').indexOf('ja')==0?'ja':'en'))=='en')document.getElementById('bootMsg').textContent='Polishing the pins'}catch(e){}
+window.__bootN=0;window.__bootStep=function(){var n=++window.__bootN,b=document.getElementById('bootBar');if(b)b.style.transform='scaleX('+Math.min(1,n/6)+')'};
+setTimeout(function(){window.__bootTimeout=!window.__bootDone;document.getElementById('boot').classList.add('gone')},12000);
+var errs=[];window.addEventListener('error',function(e){errs.push((e.message||(e.target&&(e.target.src||e.target.href))||'error')+(e.filename?' @'+e.filename+':'+e.lineno:''))},true);
+window.addEventListener('unhandledrejection',function(e){errs.push('reject: '+String(e.reason&&e.reason.message||e.reason))});
+setTimeout(function(){if(window.__jsUp)return;var d=document.createElement('div');d.id='bootErr';d.textContent='起動できませんでした / failed to start\n'+(errs.join('\n')||'(no error captured)')+'\n'+navigator.userAgent;document.body.appendChild(d)},15000)})();
+</script>
+<script src="tm.js?v=1" data-game="pin-rescue"></script>
+<script src="sfx.js?v=1" onload="__bootStep()"></script>
+<script src="data.js?v=1" onload="__bootStep()"></script>
+<script src="engine.js?v=1" onload="__bootStep()"></script>
+<script src="levels.js?v=1" onload="__bootStep()"></script>
+<script src="game.js?v=1"></script>
+<script src="support.js?v=2" data-ja="金貨1枚" data-en="a gold coin"></script>
+</body>
+</html>
