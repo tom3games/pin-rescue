@@ -77,6 +77,7 @@
     if (!B.noFloor) w.polys.push(makePoly(rectPoly(-40, H - 24, W + 80, 64)))
     for (const r of def.walls || []) w.polys.push(makePoly(Array.isArray(r[0]) ? r : rectPoly(r[0], r[1], r[2], r[3])))
     for (const r of def.cracked || []) w.polys.push(makePoly(Array.isArray(r[0]) ? r : rectPoly(r[0], r[1], r[2], r[3]), 'cracked'))
+    for (const r of def.ice || []) w.polys.push(makePoly(Array.isArray(r[0]) ? r : rectPoly(r[0], r[1], r[2], r[3]), 'ice'))
     const hx = w.hero.x, hy = w.hero.y
     w.zone = def.zone || [hx - 62, hx + 62, hy - 72]
     w.heroPoly = makePoly(rectPoly(hx - HERO_W / 2, hy - HERO_H, HERO_W, HERO_H), 'hero')
@@ -194,6 +195,14 @@
     return { water, waterAbove, lava }
   }
 
+  // 氷: 溶岩か爆風に触れると、その形のまま水になる
+  function thaw(w, P) {
+    P.gone = true; w.events.push({ e: 'thaw', x: (P.x0 + P.x1) / 2, y: (P.y0 + P.y1) / 2 })
+    for (let y = P.y1 - 5, row = 0; y > P.y0 + 3; y -= 8.4, row++) for (let x = P.x0 + 5 + (row % 2) * 4.8; x < P.x1 - 3; x += 9.6) {
+      if (polyDist(P, x, y) > 0) continue
+      addPart(w, WATER, x, y)
+    }
+  }
   function explode(w, b) {
     b.alive = false; b.exploded = true
     const ER = 74
@@ -209,6 +218,7 @@
         }
       }
     }
+    for (const P of w.polys) if (P.kind === 'ice' && !P.gone && polyDist(P, b.x, b.y) < ER) thaw(w, P)
     for (const o of w.bodies) {
       if (o === b || !o.alive) continue
       const d = Math.hypot(o.x - b.x, o.y - b.y)
@@ -286,7 +296,7 @@
       if (p.conv) {
         p.conv = false
         if (p.t === LAVA) { p.t = STONE; p.r = RAD[STONE]; p.fresh = 12 }
-        else if (p.t === WATER) { w.cold += 6; if (p.id % 2 === 0) { p.t = STONE; p.r = RAD[STONE]; p.fresh = 12 } else p.alive = false }
+        else if (p.t === WATER) { w.cold += 6; w.coldT = w.t; if (p.id % 2 === 0) { p.t = STONE; p.r = RAD[STONE]; p.fresh = 12 } else p.alive = false }
         w.events.push({ e: 'steam', x: p.x, y: p.y })
       }
       if (p.y > H + 40 || p.x < -40 || p.x > W + 40) { p.alive = false; if (p.t === COIN) w.lost++ ; continue }
@@ -314,10 +324,12 @@
           const a = w.grid.get(cx + ox + (cy + oy) * 1000); if (!a) continue
           for (const q of a) { if (!q.alive) continue; const d2 = (q.x - p.x) ** 2 + (q.y - p.y) ** 2; if (q.t === WATER && d2 < 24 * 24) wq = q; else if (q.t === STONE && d2 < 144) crust = true }
         }
-        if (wq && crust) { /* 石の膜があるときだけ（壁やピンごしには冷えない） */ p.t = STONE; p.r = RAD[STONE]; p.fresh = 20; wq.alive = false; w.cold += 6; w.events.push({ e: 'steam', x: p.x, y: p.y }) }
+        if (wq && crust) { /* 石の膜があるときだけ（壁やピンごしには冷えない） */ p.t = STONE; p.r = RAD[STONE]; p.fresh = 20; wq.alive = false; w.cold += 6; w.coldT = w.t; w.events.push({ e: 'steam', x: p.x, y: p.y }) }
       }
     }
     // 水が触れた所から、つながった溶岩が固まっていく（水1粒で6粒まで）
+    // 冷やす力は、水と溶岩が触れてから1秒だけ残す（後から落ちてきた溶岩が、離れた所で勝手に固まらないように）
+    if (w.cold > 0 && w.t - (w.coldT || 0) > 1) w.cold = 0
     if (w.cold > 0) {
       buildGrid(w)
       for (const p of w.parts) {
@@ -332,6 +344,10 @@
       for (const p of w.parts) if (p.fresh2) { p.fresh = 20; p.fresh2 = 0 }
     }
     for (const p of w.parts) if (p.fresh > 0) p.fresh--
+    for (const P of w.polys) {
+      if (P.kind !== 'ice' || P.gone) continue
+      for (const p of w.parts) if (p.alive && p.t === LAVA && p.x > P.x0 - 8 && p.x < P.x1 + 8 && p.y > P.y0 - 8 && p.y < P.y1 + 8 && polyDist(P, p.x, p.y) < p.r + 1.5) { thaw(w, P); break }
+    }
     // 魔物と爆弾
     for (const b of w.bodies) {
       if (!b.alive) continue
@@ -377,7 +393,7 @@
   function runScript(def, steps, opt) {
     const w = create(def, opt)
     const settle = (maxSec) => { const end = w.t + maxSec; while (w.t < end && w.state === 'play') { step(w); if (w.quiet > 0.5 && !w.pins.some(p => p.pulling && !p.gone)) break } }
-    settle(1)
+    for (let i = 0; i < 60; i++) step(w)   // ブラウザの load() と同じく、置いた直後は必ず1秒（60回）落ち着かせる
     for (const s of steps) {
       if (w.state !== 'play') break
       const [id, wait] = Array.isArray(s) ? s : [s, null]

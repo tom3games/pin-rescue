@@ -1,3 +1,4 @@
+import './mute-auto.mjs'
 // 公開版の最初の読み込みを測る（無音）。キャッシュなしの新しい状態で、回線と端末の遅さを再現する
 // node loadtime.mjs <URL> <準備完了の式 例 window.__kobReady> [回数]
 import { createRequire } from 'node:module'

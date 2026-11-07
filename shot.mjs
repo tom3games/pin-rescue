@@ -1,3 +1,4 @@
+import './mute-auto.mjs'
 // 面を撮って目で見る（音は出さない）。node shot.mjs <面...> [--after=秒] [--pull=A,B]
 import { MUTE_LAUNCH, muteContext } from './mute.mjs'
 import { chromium } from 'playwright'

@@ -1,10 +1,11 @@
+import '../mute-auto.mjs'
 // 面ごとに、台本どおりに抜いた途中を撮って横に並べる（音は出さない）。node tools/story.mjs <面...> [--wrong] [--sec=3]
 import { MUTE_LAUNCH, muteContext } from '../mute.mjs'
 import { chromium } from 'playwright'
 import { spawn, execFileSync } from 'node:child_process'
 import { mkdirSync } from 'node:fs'
 import os from 'node:os'
-const ROOT = new URL('..', import.meta.url).pathname, PORT = 5953
+const ROOT = new URL("..", import.meta.url).pathname, PORT = Number(process.env.PORT || 5953)
 const OUT = process.env.STORY_OUT || (os.tmpdir() + '/pin-rescue-story')
 mkdirSync(OUT, { recursive: true })
 const server = spawn(process.execPath, ['server.mjs'], { cwd: ROOT, env: { ...process.env, PORT: String(PORT) } })
@@ -17,6 +18,8 @@ await muteContext(ctx)
 const p = await ctx.newPage(); const errs = []
 p.on('pageerror', e => errs.push(e.message))
 await p.goto(`http://localhost:${PORT}/?notut=1`); await p.waitForFunction(() => window.__pinrReady, null, { timeout: 15000 })
+for (const f of (process.env.EXTRA || '').split(',').filter(Boolean)) await p.addScriptTag({ path: f })   // 作りかけの面
+if (!(await p.evaluate(() => window.__muteOk()))) throw new Error('not muted')
 for (const lv of lvs) {
   await p.evaluate(i => { pinr.load(i - 1, { button: false, variant: { tie: false } }); pinr.dbg.pause(true); pinr.dbg.settleView() }, lv)
   const order = await p.evaluate(([i, w]) => window.LEVELS[i - 1][w ? 'wrong' : 'solve'], [lv, wrong])

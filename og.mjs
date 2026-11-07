@@ -1,3 +1,4 @@
+import './mute-auto.mjs'
 // SNS 用の画像（og.png 1200x630）と icon.png を作る。遊んでいる一番の山場（溶岩が勇者に迫る）＋題名。音は出さない
 import { MUTE_LAUNCH, muteContext } from './mute.mjs'
 import { chromium } from 'playwright'
@@ -19,14 +20,13 @@ await p.evaluate(() => {
   pinr.dbg.say('ちょっ、熱っ', 99)
   const s = 1.5; pinr.dbg.setView({ s, ox: 10, oy: -186 * s })
   const d = document.createElement('div'); d.id = 'ogt'
-  d.innerHTML = `<i>広告</i><p class="a">広告で見た、あの</p><h1>ピン抜き</h1><p class="b">本当に遊べます。</p><p class="c">全12面・ダウンロードなし</p>`
+  d.innerHTML = `<p class="a">ピンを抜け！</p><h1>勇者と金貨</h1><p class="b">抜く順番で、勇者の運命が決まる。</p><p class="c">全30面（上級18面）・ダウンロードなし</p>`
   document.body.appendChild(d)
   const st = document.createElement('style'); st.textContent = `
     #ogt{position:fixed;left:556px;top:0;width:640px;height:630px;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;padding:0 40px 0 30px;z-index:9}
-    #ogt i{font-style:normal;font-size:20px;background:#f2f2f2;color:#555;padding:2px 8px;border-radius:3px;margin-bottom:18px}
-    #ogt .a{font-family:"RocknRoll One";font-size:40px;background:#fff;color:#111;padding:2px 14px 4px;transform:rotate(-2deg)}
-    #ogt h1{font-family:"RocknRoll One";font-weight:400;font-size:132px;line-height:1.05;color:#f2c230;-webkit-text-stroke:12px #0d0a07;paint-order:stroke fill;filter:drop-shadow(0 8px 0 #000);transform:rotate(-2deg);margin:6px 0 4px;white-space:nowrap}
-    #ogt .b{font-family:"Shippori Mincho B1";font-weight:600;font-size:44px;color:#fff;text-shadow:0 3px 8px #000}
+    #ogt .a{font-family:"RocknRoll One";font-size:56px;color:#fff;-webkit-text-stroke:8px #0d0a07;paint-order:stroke fill;transform:rotate(-2deg)}
+    #ogt h1{font-family:"RocknRoll One";font-weight:400;font-size:104px;line-height:1.05;color:#f2c230;-webkit-text-stroke:12px #0d0a07;paint-order:stroke fill;filter:drop-shadow(0 8px 0 #000);transform:rotate(-2deg);margin:6px 0 4px;white-space:nowrap}
+    #ogt .b{font-family:"Shippori Mincho B1";font-weight:600;font-size:32px;white-space:nowrap;color:#fff;text-shadow:0 3px 8px #000}
     #ogt .c{margin-top:22px;font-size:24px;font-weight:700;color:#d8c9b0}`
   document.head.appendChild(st)
 })

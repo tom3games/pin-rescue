@@ -1,8 +1,8 @@
-// 広告で見たあのピン抜き。描画・画面・音・入力。物理は engine.js、面は levels.js、文言は data.js
+// ピンを抜け！勇者と金貨（pin-rescue）。描画・画面・音・入力。物理は engine.js、面は levels.js、文言は data.js
 ;(function () {
   'use strict'
   window.__jsUp = true
-  const E = window.PinEngine, LV = window.LEVELS
+  const E = window.PinEngine, LV = window.LEVELS, HARD = 12   // 13面（添字12）から上級
   const { WATER, LAVA, COIN, STONE } = E
   const $ = id => document.getElementById(id)
   const URL0 = 'https://tom3games.github.io/pin-rescue/'
@@ -23,7 +23,7 @@
   let acc = 0, lastT = performance.now(), clock = 0
   let bg = null
   const fx = []
-  let bubble = null, shake = 0, sheetOn = false, tutorOn = false, hintPin = null
+  let bubble = null, shake = 0, sheetOn = false, tutorOn = false, hintPin = null, hintOn = false
   let best = store.get('pinr_best', 0)
   const fails = store.get('pinr_fails', {})
   let sessionFails = 0, totalFails = store.get('pinr_totalFails', 0)
@@ -117,6 +117,19 @@
     // 上を向いた面は明るく、輪郭は濃く
     c.save(); polyPath(c, P); c.strokeStyle = '#211910'; c.lineWidth = 2.4; c.lineJoin = 'round'; c.stroke()
     c.strokeStyle = cracked ? '#d8c6a6' : '#bba98c'; c.lineWidth = 2
+    for (const e of P.edges) if (e.ny < -0.5) { c.beginPath(); c.moveTo(e.ax - e.nx * 2, e.ay - e.ny * 2); c.lineTo(e.bx - e.nx * 2, e.by - e.ny * 2); c.stroke() }
+    c.restore()
+  }
+  function drawIce(c, P, t) {   // 氷の塊（溶岩に触れると水になる）
+    c.save(); polyPath(c, P); c.fillStyle = 'rgba(150,214,246,.92)'; c.fill(); c.clip()
+    c.fillStyle = 'rgba(255,255,255,.55)'
+    for (let x = P.x0 - 40; x < P.x1; x += 26) { c.beginPath(); c.moveTo(x, P.y1); c.lineTo(x + 8, P.y1); c.lineTo(x + 8 + (P.y1 - P.y0) * 0.6, P.y0); c.lineTo(x + (P.y1 - P.y0) * 0.6, P.y0); c.fill() }
+    c.strokeStyle = 'rgba(40,110,160,.55)'; c.lineWidth = 1.2; c.beginPath()
+    const cx = (P.x0 + P.x1) / 2, cy = (P.y0 + P.y1) / 2
+    c.moveTo(cx - 10, cy - 6); c.lineTo(cx, cy + 2); c.lineTo(cx + 12, cy - 3); c.moveTo(cx, cy + 2); c.lineTo(cx - 3, P.y1); c.stroke()
+    c.restore()
+    c.save(); polyPath(c, P); c.strokeStyle = '#14405e'; c.lineWidth = 2.4; c.lineJoin = 'round'; c.stroke()
+    c.strokeStyle = '#eaf8ff'; c.lineWidth = 2
     for (const e of P.edges) if (e.ny < -0.5) { c.beginPath(); c.moveTo(e.ax - e.nx * 2, e.ay - e.ny * 2); c.lineTo(e.bx - e.nx * 2, e.by - e.ny * 2); c.stroke() }
     c.restore()
   }
@@ -355,6 +368,7 @@
     drawTorches(c, w, t)
     const R = rng(77)
     for (const P of w.polys) if (P.kind === 'cracked' && !P.gone) drawStone(c, P, R, true)
+    for (const P of w.polys) if (P.kind === 'ice' && !P.gone) drawIce(c, P, t)
     drawParts(c, w, t)
     for (const b of w.bodies) if (b.alive) { if (b.kind === 'monster') drawMonster(c, b, t); else drawBomb(c, b, t) }
     drawHero(c, w.hero, t, w.state === 'clear')
@@ -377,9 +391,10 @@
     bg = null; fx.length = 0; bubble = null; shake = 0; sheetOn = false
     $('sheet').hidden = true; $('stamp').textContent = ''; $('stamp').className = ''
     $('lvNum').textContent = T.level(lvIdx + 1)
+    document.querySelector('.lvplate').classList.toggle('hard', lvIdx >= HARD); $('lvTag').hidden = lvIdx < HARD; $('lvTag').textContent = T.hardTag
     const cap = T.caps[lvIdx] || ''
     $('capT').textContent = cap
-    hintPin = (fails[lvIdx] || 0) >= 2 ? d.solve[0] : null
+    hintOn = (fails[lvIdx] || 0) >= 2; hintPin = hintOn ? d.solve[0] : null
     tutorOn = lvIdx === 0 && !Q.has('notut') && (fails[0] || 0) < 3 && best < 1
     $('capT').parentElement.style.visibility = tutorOn ? 'hidden' : ''
     $('tutorT').textContent = coarse ? T.tutor : T.tutorPc
@@ -406,10 +421,9 @@
     $('tl1').textContent = T.title1; $('tl2').textContent = T.title2; $('tl2').style.fontSize = lang === 'en' ? 'min(12.5vw,58px)' : ''; $('tl3').textContent = T.titleSub
     $('bStart').textContent = best > 0 && best < LV.length ? T.cont : T.start
     $('bStages').textContent = T.stages; $('bHow').textContent = T.how; $('bLang').textContent = T.lang
-    $('stH').textContent = T.stages; $('bStBack').textContent = T.back
+    $('stH').textContent = T.stages; $('bStBack').textContent = T.back; $('tabBasic').textContent = T.tabBasic; $('tabHard').textContent = T.tabHard(LV.length); $('lvTag').textContent = T.hardTag
     $('howH').textContent = T.howH; $('howLead').textContent = T.howLead; $('bHowClose').textContent = T.back
     $('howFoot').textContent = T.howFoot; $('lPrivacy').textContent = T.privacy
-    $('adTag').textContent = T.adTag
     $('bSave').textContent = T.save; $('bPost').textContent = T.post; $('bEndSave').textContent = T.save; $('bEndPost').textContent = T.post
     $('bAgain').textContent = T.again
     if (world) { $('capT').textContent = T.caps[lvIdx]; $('tutorT').textContent = coarse ? T.tutor : T.tutorPc }
@@ -424,11 +438,17 @@
     if (k === 'lava') { for (let i = 0; i < 9; i++) fake.parts.push({ t: i < 5 ? LAVA : i < 7 ? STONE : WATER, x: 8 + (i % 5) * 7, y: i < 5 ? 34 : i < 7 ? 26 + (i - 5) * 0 : 18, alive: true, id: i }); fake.parts[5].x = 16; fake.parts[6].x = 24; fake.parts[7].x = 18; fake.parts[8].x = 26; drawParts(c, fake, 1) }
     if (k === 'monster') { c.translate(22, 26); c.scale(1.1, 1.1); c.translate(-22, -26); drawMonster(c, { x: 22, y: 26, face: -1, ground: false }, 0) }
     if (k === 'bomb') { drawBomb(c, { x: 22, y: 28, lit: 0 }, 0.2) }
+    if (k === 'ice') { drawIce(c, { pts: [[6, 16], [38, 16], [38, 34], [6, 34]], edges: [{ ax: 6, ay: 16, bx: 38, by: 16, nx: 0, ny: -1 }], x0: 6, y0: 16, x1: 38, y1: 34 }, 0); for (let i = 0; i < 3; i++) fake.parts.push({ t: LAVA, x: 12 + i * 10, y: 9, alive: true, id: i }); drawParts(c, fake, 0) }
   }
-  function openStages() {
+  let stPage = -1
+  function openStages(page) {
     show('stages')
-    const g = $('grid'); g.textContent = ''
+    if (page == null) page = stPage >= 0 ? stPage : (best >= HARD ? 1 : 0)
+    stPage = page
+    $('tabBasic').classList.toggle('on', page === 0); $('tabHard').classList.toggle('on', page === 1)
+    const g = $('grid'); g.textContent = ''; g.classList.toggle('hard', page === 1)
     LV.forEach((d, i) => {
+      if ((i >= HARD) !== (page === 1)) return
       const b = document.createElement('button'), c = document.createElement('canvas')
       c.width = 120; c.height = 200
       const w = E.create(d), x = c.getContext('2d'); x.scale(120 / 360, 200 / 600); drawWorld(x, w, 0, null, { thumb: true })
@@ -450,14 +470,14 @@
     let line
     if (ok) {
       best = Math.max(best, lvIdx + 1); store.set('pinr_best', best)
-      line = Math.random() < 0.18 ? pick(T.narrClear.slice(3)) : T.narrClear[0]
+      line = lvIdx === HARD - 1 ? T.narrToHard : lvIdx >= HARD && Math.random() < 0.45 ? pick(T.narrHardClear) : Math.random() < 0.18 ? pick(T.narrClear.slice(3)) : T.narrClear[0]
       $('stamp').textContent = T.stampClear; $('stamp').className = ''; void $('stamp').offsetWidth; $('stamp').className = 'on'
       $('bNext').textContent = T.next
       Snd.duck(0.3, 2); play('j_win', { vol: 0.9, jitter: 0 })
     } else {
       fails[lvIdx] = (fails[lvIdx] || 0) + 1; store.set('pinr_fails', fails)
       totalFails++; store.set('pinr_totalFails', totalFails)
-      line = sessionFails === 0 ? T.narrFirst : pick(T.narr[w.reason] || T.narr.stuck)
+      line = sessionFails === 0 ? T.narrFirst : pick((T.narr[w.reason] || T.narr.stuck).concat(lvIdx >= HARD ? (T.narrHard[w.reason] || T.narrHard.stuck) : []))
       sessionFails++
       $('stamp').textContent = ''
       $('bNext').textContent = T.retry
@@ -476,7 +496,7 @@
     g.fillStyle = '#1e1813'; g.fillRect(0, 0, 1080, 1350)
     g.textAlign = 'center'; g.textBaseline = 'middle'
     g.font = '64px "RocknRoll One",sans-serif'; g.lineJoin = 'round'; g.lineWidth = 16; g.strokeStyle = '#000'; g.strokeText(T.caps[lvIdx], 540, 92); g.fillStyle = '#fff'; g.fillText(T.caps[lvIdx], 540, 92)
-    g.fillStyle = '#f2f2f2'; g.fillRect(60, 40, 64, 30); g.fillStyle = '#555'; g.font = '22px sans-serif'; g.fillText(T.adTag, 92, 56)
+    g.fillStyle = lvIdx >= HARD ? '#9a4a32' : '#8a7a66'; g.fillRect(40, 52, 80, 80); g.fillStyle = lvIdx >= HARD ? '#fff2e0' : '#2a2018'; g.font = '44px "RocknRoll One",sans-serif'; g.fillText(String(lvIdx + 1), 80, 94)
     const s = 1.75, ox = (1080 - E.W * s) / 2, oy = 170
     g.save(); g.translate(ox, oy); g.scale(s, s); drawWorld(g, world, clock, bg && bg.c); g.restore()
     if (ok) { g.save(); g.translate(540, 520); g.rotate(-0.14); g.font = '92px "RocknRoll One",sans-serif'; g.lineWidth = 22; g.strokeStyle = '#000'; g.strokeText(T.stampClear, 0, 0); g.fillStyle = '#ffe14a'; g.fillText(T.stampClear, 0, 0); g.restore() }
@@ -501,15 +521,14 @@
     g.save(); g.translate(540 - 180 * 3.4, 920 - 200 * 3.4); g.scale(3.4, 3.4); drawParts(g, fake, 0); g.restore()
     g.save(); g.translate(540 - 180 * 4.2, 760 - 200 * 4.2); g.scale(4.2, 4.2); drawHero(g, { x: 180, y: 200, dead: false, fear: 0, joy: 1, wet: 0 }, 0.26, true); g.restore()
     g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineJoin = 'round'
-    g.fillStyle = '#f2f2f2'; g.fillRect(60, 60, 70, 32); g.fillStyle = '#555'; g.font = '22px sans-serif'; g.fillText(T.adTag, 95, 77)
-    g.font = '86px "RocknRoll One",sans-serif'; g.lineWidth = 20; g.strokeStyle = '#000'; g.strokeText(T.endH, 540, 170); g.fillStyle = '#ffe14a'; g.fillText(T.endH, 540, 170)
+    g.font = '86px "RocknRoll One",sans-serif'; g.lineWidth = 20; g.strokeStyle = '#000'; g.strokeText(T.endH(LV.length), 540, 170); g.fillStyle = '#ffe14a'; g.fillText(T.endH(LV.length), 540, 170)
     g.font = '600 42px "Shippori Mincho B1",serif'; const sub = T.endSub(totalFails); const tw = g.measureText(sub).width
     g.fillStyle = 'rgba(0,0,0,.8)'; g.fillRect(540 - tw / 2 - 26, 925, tw + 52, 76); g.fillStyle = '#fff'; g.fillText(sub, 540, 964)
     g.font = '26px sans-serif'; g.fillStyle = '#d8c9b0'; g.fillText('tom3games.github.io/pin-rescue', 540, 1040)
   }
   function openEnd() {
     show('end'); drawEnd(); play('j_end', { vol: 0.9, jitter: 0, ui: true })
-    $('bEndPost').href = 'https://x.com/intent/post?text=' + encodeURIComponent(T.postEnd(totalFails) + '\n' + T.tag) + '&url=' + encodeURIComponent(URL0)
+    $('bEndPost').href = 'https://x.com/intent/post?text=' + encodeURIComponent(T.postEnd(totalFails, LV.length) + '\n' + T.tag) + '&url=' + encodeURIComponent(URL0)
   }
 
   // ---- 出来事 → 音と絵
@@ -543,6 +562,7 @@
         case 'fuse': play('steam', { vol: 0.35, rate: 1.6 }); break
         case 'boom': play('boom', { vol: 1 }); shake = 1; addFx('boom', e.x, e.y, { life: 0.55 }); for (let i = 0; i < 10; i++) addFx('puff', e.x, e.y, { col: '70,60,55', a: 0.8, r: 9, vx: Math.cos(i) * 60, vy: Math.sin(i) * 60 - 30, life: 1.2 }); break
         case 'crack': play('crack', { vol: 0.9 }); break
+        case 'thaw': play('steam', { vol: 0.8, rate: 0.9 }); play('splash', { vol: 0.7 }, 120); for (let i = 0; i < 8; i++) addFx('puff', e.x + (i - 4) * 6, e.y, { col: '235,245,250', a: 0.8, r: 6, vy: -50, vx: (i - 4) * 10, life: 1 }); break
         case 'hdie': shake = Math.max(shake, 0.6); play('scream', { vol: 0.65, jitter: 0.04 }); say(T.hero.die[e.how] || '…', 2.4); if (e.how === 'lava') for (let i = 0; i < 8; i++) addFx('puff', e.x, e.y - 30, { col: '60,55,50', a: 0.7, r: 6, vy: -60, vx: (i - 4) * 9, life: 1.3 }); break
       }
     }
@@ -563,6 +583,11 @@
       if (clock - lastCoinSnd > 0.16) { let n = 0; for (const p of w.parts) if (p.alive && p.t === COIN && Math.abs(p.y - p.py) * 180 > 140) n++; if (n > 2) { play('coin', { vol: Math.min(0.7, 0.2 + n * 0.03) }); lastCoinSnd = clock } }
       if (!saidMonster && h.fear > 0.5 && w.bodies.some(b => b.alive && b.kind === 'monster' && Math.hypot(b.x - h.x, b.y - h.y) < 110)) { saidMonster = true; say(pick(T.hero.monster)) }
       if (!saidWet && h.wet > 0.8) { saidWet = true; say(pick(T.hero.wet)) }
+      if (hintOn) {   // ヒント: 正解の順番どおりに抜いている間は、落ち着いたら次のピンを光らせる（検証の台本と同じ待ち方）
+        const sol = w.def.solve, k = w.pulls.length, follow = w.pulls.every((q, i) => q.id === sol[i])
+        const ready = !w.pins.some(q => q.pulling && !q.gone) && (k === 0 || w.quiet > 0.5 || w.t - (w.pulls[k - 1].frame / 60) > 7)
+        hintPin = follow && k < sol.length && ready && w.state === 'play' ? sol[k] : null
+      }
       if (w.state === 'clear' && prevState === 'play') say(pick(T.hero.win), 2.6)
       prevState = w.state
       if (w.state !== 'play' && !sheetOn && w.t >= w.endAt) finish()
@@ -596,16 +621,12 @@
     // 外のまわりの岩
     ctx.fillStyle = '#2a211a'; ctx.fillRect(-30, -30, E.W + 60, E.H + 60)
     drawWorld(ctx, world, clock, bg.c)
-    if (mode === 'title') {   // 広告の枠
-      ctx.lineWidth = 3 / view.s; ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.strokeRect(0, 0, E.W, E.H)
-      ctx.fillStyle = '#f2f2f2'; ctx.fillRect(8, 8, 34, 18); ctx.fillStyle = '#555'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(T.adTag, 25, 17.5)
-    }
     if (tutorOn && mode === 'play') {
       const p = pinScreen(LV[0].solve[0]); if (p) { const el = $('tutor'); el.style.left = (p.x - 58) + 'px'; el.style.top = (p.y + 6) + 'px' }
     }
   }
 
-  // タイトルの後ろで、広告みたいに勝手に解いてみせる
+  // タイトルの後ろで、勝手に解いてみせる
   const DEMO = [{ lv: 0, steps: [[1.4, 'A']] }, { lv: 2, steps: [[1.2, 'W'], [3.4, 'C']] }, { lv: 0, steps: [[1.4, 'B']] }]
   let demoI = 0
   function startDemo() { demo = DEMO[demoI % DEMO.length]; demoI++; lvIdx = demo.lv; world = E.create(LV[demo.lv], {}); for (let i = 0; i < 60; i++) E.step(world); world.events.length = 0; demo.t0 = clock; demo.k = 0; demo.end = 0; bg = null }
@@ -635,10 +656,12 @@
       const s = E.pinSeg(p), d = Math.min(distSeg(wx, wy, s), Math.hypot(wx - s[2] - p.ux * 9, wy - s[3] - p.uy * 9) - 4)
       if (d < bd) { bd = d; bestP = p }
     }
-    if (bestP) { E.pull(world, bestP.id); window.__taps = (window.__taps || 0) + 1 }
+    if (bestP) { E.pull(world, bestP.id); hintPin = null; window.__taps = (window.__taps || 0) + 1 }
   })
   $('bStart').onclick = () => { click(); show('play'); load(best > 0 && best < LV.length ? best : (Q.has('lv') ? Number(Q.get('lv')) - 1 : 0)) }
   $('bStages').onclick = () => { click(); openStages() }
+  $('tabBasic').onclick = () => { click(); openStages(0) }
+  $('tabHard').onclick = () => { click(); openStages(1) }
   $('bStBack').onclick = () => { click(); show('title') }
   $('bHow').onclick = () => { click(); show('how') }
   $('bHowClose').onclick = () => { click(); show('title') }
@@ -664,7 +687,7 @@
     get w() { return world }, get mode() { return mode }, get lv() { return lvIdx }, get sheet() { return sheetOn }, get view() { return Object.assign({}, view) },
     get hint() { return hintPin }, get tutor() { return tutorOn },
     load: (i, o) => { show('play'); load(i, o) }, pinXY: pinScreen, levels: LV.length,
-    dbg: { pause: v => { paused = v !== false; acc = 0; lastT = performance.now() }, step: n => { for (let i = 0; i < (n || 1); i++) stepOnce() }, settleView: () => { calcTarget(); Object.assign(view, target) }, setView: o => { Object.assign(target, o); Object.assign(view, o) }, say },
+    dbg: { pause: v => { paused = v !== false; acc = 0; lastT = performance.now() }, step: n => { for (let i = 0; i < (n || 1); i++) stepOnce() }, settleView: () => { calcTarget(); Object.assign(view, target) }, setFails: (i, n) => { fails[i] = n }, setView: o => { Object.assign(target, o); Object.assign(view, o) }, say },
     art: { drawHero, drawPins, drawParts, drawMonster },
     texts: () => [...document.querySelectorAll('main:not([hidden]) #capT, main:not([hidden]) #narr, main:not([hidden]) #stamp, main:not([hidden]) #tutorT')].filter(e => e.offsetParent && e.textContent && getComputedStyle(e.closest('.cap') || e).visibility !== 'hidden' && !e.closest('[hidden]')).map(e => e.textContent).concat(bubble ? [bubble.text] : []),
     T: () => T,

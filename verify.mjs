@@ -1,3 +1,4 @@
+import './mute-auto.mjs'
 import { MUTE_LAUNCH, muteContext } from './mute.mjs'
 // 検証。node verify.mjs（音は出さない。押す操作は全部、ピンの画面座標を本物の指・マウスで押す）
 import { chromium, webkit } from 'playwright'
@@ -70,10 +71,10 @@ const variance = (p, sel) => p.evaluate(sel => {
   return Math.round(s2 / n - (s / n) ** 2)
 }, sel)
 const SIZES = [[360, 640, 'small'], [390, 844, 'phone'], [430, 932, 'big']]
-const N = 12
 
 const browser = await chromium.launch(MUTE_LAUNCH)
 const p = await open(browser)
+const N = await p.evaluate(() => window.LEVELS.length), HARD = 12
 await t('起動時にエラーが出ない・ロード画面が消える', async () => { expect(p.errs.length === 0, p.errs.join('|')); const g = await p.evaluate(() => document.getElementById('boot').classList.contains('gone')); expect(g, 'boot visible') })
 await t('ブラウザの拡大が起きない（viewport・ピンチ・Ctrl+ホイール・Ctrl+プラス）', async () => {
   const r = await p.evaluate(() => {
@@ -85,11 +86,15 @@ await t('ブラウザの拡大が起きない（viewport・ピンチ・Ctrl+ホ�
   })
   expect(/user-scalable=no/.test(r.vp) && r.gesture && r.wheel && r.key && r.ta === 'manipulation' && r.us === 'none', JSON.stringify(r))
 })
+await t('画面と文言に「広告」が残っていない（日英）', async () => {
+  const r = await p.evaluate(() => { const bad = []; for (const l of ['ja', 'en']) { const j = JSON.stringify(window.TXT[l], (k, v) => typeof v === 'function' ? v(1, 30) : v); if (/広告|\bad\b|the ad/i.test(j)) bad.push(l) } if (/広告/.test(document.title + document.body.innerText)) bad.push('dom'); return bad })
+  expect(!r.length, r.join())
+})
 await t('OGP 一式がある', async () => {
   const r = await p.evaluate(() => ['og:title', 'og:description', 'og:image', 'og:url', 'og:type'].map(k => !!document.querySelector(`meta[property="${k}"]`)).concat(!!document.querySelector('meta[name="twitter:card"]')))
   expect(r.every(Boolean), JSON.stringify(r))
 })
-await t('タイトルの後ろで広告みたいに勝手に解く（何か描けている）', async () => { await p.waitForTimeout(1500); const v = await variance(p, '#stage'); expect(v > 300, 'variance ' + v); return v })
+await t('タイトルの後ろで勝手に解いてみせる（何か描けている）', async () => { await p.waitForTimeout(1500); const v = await variance(p, '#stage'); expect(v > 300, 'variance ' + v); return v })
 await t('始めるで1面・チュートリアルの指が最初のピンを指す', async () => {
   await tap(p, '#bStart')
   const r = await p.evaluate(() => ({ lv: pinr.lv, tut: pinr.tutor, mode: pinr.mode }))
@@ -107,7 +112,7 @@ await t('チュートリアルは最初のピンを抜くと消える・遊び�
   expect(!r.tut && r.texts.length <= 2, JSON.stringify(r)); return r.texts
 })
 
-// ---- 全12面: 本物のクリックで、解き方ならクリア・間違いなら失敗・何もしないとクリアしない
+// ---- 全面: 本物のクリックで、解き方ならクリア・間違いなら失敗・何もしないとクリアしない
 for (let i = 0; i < N; i++) {
   const order = await p.evaluate(i => window.LEVELS[i].solve, i), wrong = await p.evaluate(i => window.LEVELS[i].wrong, i)
   await t(`${i + 1}面: 解く順番でクリア ${order.join('→')}`, async () => {
@@ -122,6 +127,20 @@ for (let i = 0; i < N; i++) {
     expect(nx[0] === 'もう一回' && nx[1].length > 4, JSON.stringify(nx))
     await p.screenshot({ path: `${ROOT}/shots/lv${i + 1}-fail.png` })
     return r.reason
+  })
+  for (const wr of await p.evaluate(i => window.LEVELS[i].wrongs || [], i)) {
+    await t(`${i + 1}面: ほかの間違いも失敗 ${wr.join('→')}`, async () => { const r = await playLevel(p, i, wr); expect(r.state === 'fail', JSON.stringify(r)); return r.reason })
+  }
+  if (i >= HARD) await t(`${i + 1}面: 2回失敗したあと、光るピンだけを順に押すとクリアできる`, async () => {
+    await p.evaluate(i => { pinr.dbg.setFails(i, 2); pinr.load(i, { button: false, variant: { tie: false } }); pinr.dbg.pause(true); pinr.dbg.settleView() }, i)
+    const seq = []
+    for (let k = 0; k < 10; k++) {
+      const h = await p.evaluate(() => { for (let n = 0; n < 600 && pinr.w.state === 'play' && !pinr.hint; n++) pinr.dbg.step(1); return pinr.w.state === 'play' ? pinr.hint : null })
+      if (!h) break
+      seq.push(h); await tapPin(p, h)
+    }
+    const r = await finishRun(p); await p.evaluate(i => pinr.dbg.setFails(i, 0), i)
+    expect(r.state === 'clear', JSON.stringify(r) + seq.join('')); return seq.join('→')
   })
   await t(`${i + 1}面: 何もしないとクリアしない`, async () => {
     await p.evaluate(i => { pinr.load(i, { button: false, variant: { tie: false } }); pinr.dbg.pause(true); pinr.dbg.step(900) }, i)
@@ -146,13 +165,14 @@ await t('2回失敗した面は、次の正解のピンが光る（ヒント）'
   const after = await p.evaluate(() => { pinr.load(3); return pinr.hint })
   expect(before === null && after === 'W', JSON.stringify({ before, after }))
   await tapPin(p, 'W'); await p.evaluate(() => pinr.dbg.step(1)); expect(await p.evaluate(() => pinr.hint) === null, 'hint stays after pull')
+  await settle(p); const nx = await p.evaluate(() => pinr.hint); expect(nx === 'M', 'next hint ' + nx)
 })
-await t('失敗の語りは最初が「広告では、ここで成功していました。」', async () => {
+await t('失敗の語りは最初が「最初は、だいたいこうなります。」', async () => {
   const q = await open(browser)
   await q.evaluate(() => { pinr.load(0, { button: false }); pinr.dbg.pause(true) })
   await tapPin(q, 'B'); await finishRun(q)
   const n = await q.evaluate(() => document.getElementById('narr').textContent); await q.close()
-  expect(n === '広告では、ここで成功していました。', n)
+  expect(n === '最初は、だいたいこうなります。', n)
 })
 await t('画像で保存・Xでポスト（失敗の画面）', async () => {
   await p.evaluate(() => { pinr.load(0, { button: false }); pinr.dbg.pause(true) })
@@ -168,8 +188,17 @@ await t('まれな変化（ネクタイの魔物・ボタンの金貨）でも�
   const r = await finishRun(p); await p.screenshot({ path: `${ROOT}/shots/rare.png` })
   expect(r.state === 'clear' && !p.errs.length, JSON.stringify(r) + p.errs.join('|'))
 })
-await t('12面クリアで最後の画面（絵が描けている・最初から・支援リンク）', async () => {
-  const r = await playLevel(p, 11, await p.evaluate(() => window.LEVELS[11].solve)); expect(r.state === 'clear', JSON.stringify(r))
+await t('12面クリアの語りは「ここから先は、少しだけ意地悪です。」・次へで13面（上級の札）', async () => {
+  const r = await playLevel(p, HARD - 1, await p.evaluate(i => window.LEVELS[i].solve, HARD - 1)); expect(r.state === 'clear', JSON.stringify(r))
+  const n = await p.evaluate(() => document.getElementById('narr').textContent); expect(n === 'ここから先は、少しだけ意地悪です。', n)
+  await tap(p, '#bNext')
+  const q = await p.evaluate(() => ({ lv: pinr.lv, tag: !document.getElementById('lvTag').hidden && document.getElementById('lvTag').textContent, hard: document.querySelector('.lvplate').classList.contains('hard') }))
+  await p.screenshot({ path: `${ROOT}/shots/lv13-start.png` })
+  expect(q.lv === HARD && q.tag === '上級' && q.hard, JSON.stringify(q)); return q
+})
+await t('最終面クリアで最後の画面（全N面・絵が描けている・最初から・支援リンク）', async () => {
+  const r = await playLevel(p, N - 1, await p.evaluate(i => window.LEVELS[i].solve, N - 1)); expect(r.state === 'clear', JSON.stringify(r))
+  expect(await p.evaluate(() => document.getElementById('bNext').textContent) === '次へ', 'next label')
   await tap(p, '#bNext'); await p.waitForTimeout(300)
   const v = await variance(p, '#endCv'), m = await p.evaluate(() => pinr.mode), sup = await p.evaluate(() => !!document.getElementById('tmSupport'))
   await p.screenshot({ path: `${ROOT}/shots/end.png` })
@@ -199,15 +228,23 @@ for (const [w, h, name] of SIZES) {
   await q.waitForTimeout(400)
   views.title = await fit(q); await q.screenshot({ path: `${ROOT}/shots/fit-${name}-title.png` })
   await tap(q, '#bHow'); views.how = await fit(q); await q.screenshot({ path: `${ROOT}/shots/fit-${name}-how.png` }); await tap(q, '#bHowClose')
-  await tap(q, '#bStages'); views.stages = await fit(q); await q.screenshot({ path: `${ROOT}/shots/fit-${name}-stages.png` }); await tap(q, '#bStBack')
+  await tap(q, '#bStages'); views.stages = await fit(q); await q.screenshot({ path: `${ROOT}/shots/fit-${name}-stages.png` })
+  await tap(q, '#tabHard'); views.stagesHard = await fit(q); await q.screenshot({ path: `${ROOT}/shots/fit-${name}-stages-hard.png` })
+  await t(`${name}: ステージ選択の上級ページに13面からが並び、まだ遊べない面は押せない`, async () => {
+    const r = await q.evaluate(() => [...document.querySelectorAll('#grid button')].map(b => [b.querySelector('b').textContent, b.disabled]))
+    expect(r.length === N - HARD && r[0][0] === String(HARD + 1) && r.every(x => x[1]), JSON.stringify(r.slice(0, 3)))
+  })
+  await tap(q, '#tabBasic'); await t(`${name}: 基本ページに戻ると1〜12面`, async () => { const n = await q.evaluate(() => document.querySelectorAll('#grid button').length); expect(n === HARD, n) })
+  await tap(q, '#bStBack')
   await tap(q, '#bStart'); await q.waitForTimeout(300); views.play = await fit(q); await q.screenshot({ path: `${ROOT}/shots/fit-${name}-play.png` })
-  await t(`${name}: 全12面のピンの輪っかが画面内・44px 相当の押せる幅`, async () => {
+  await t(`${name}: 全${N}面のピンの輪っかが画面内・44px 相当の押せる幅・輪っか同士が近すぎない`, async () => {
     const out = []
     for (let i = 0; i < N; i++) {
       const r = await q.evaluate(i => { pinr.load(i, { button: false }); pinr.dbg.pause(true); pinr.dbg.settleView(); const v = pinr.view, hud = document.querySelector('.hud').getBoundingClientRect().bottom; return { pins: pinr.w.pins.map(p => pinr.pinXY(p.id)), s: v.s, top: v.oy, hud, W: innerWidth, H: innerHeight } }, i)
       for (const xy of r.pins) if (xy.x < 4 || xy.x > r.W - 4 || xy.y < r.hud || xy.y > r.H - 4) out.push(`${i + 1}:${Math.round(xy.x)},${Math.round(xy.y)}`)
       if (r.top < r.hud - 1) out.push(`${i + 1}: world under hud`)
       if (Math.max(20, 26 / r.s) * 2 * r.s < 44) out.push(`${i + 1}: hit ${r.s}`)
+      for (let a = 0; a < r.pins.length; a++) for (let b = a + 1; b < r.pins.length; b++) if (Math.hypot(r.pins[a].x - r.pins[b].x, r.pins[a].y - r.pins[b].y) < 30) out.push(`${i + 1}: rings close ${a},${b}`)
     }
     expect(!out.length, out.join(' '))
   })
@@ -218,8 +255,8 @@ for (const [w, h, name] of SIZES) {
     const r = await q.evaluate(() => { const v = pinr.view, top = document.getElementById('sheet').getBoundingClientRect().top; return { heroY: v.oy + 576 * v.s, top } })
     expect(r.heroY <= r.top + 2, JSON.stringify(r)); return r
   })
-  await q.evaluate(() => { pinr.load(11, { button: false }); pinr.dbg.pause(true) })
-  for (const id of await q.evaluate(() => window.LEVELS[11].solve)) { await tapPin(q, id); await settle(q) }
+  await q.evaluate(i => { pinr.load(i, { button: false, variant: { tie: false } }); pinr.dbg.pause(true) }, N - 1)
+  for (const id of await q.evaluate(i => window.LEVELS[i].solve, N - 1)) { await tapPin(q, id); await settle(q) }
   await finishRun(q); await tap(q, '#bNext'); await q.waitForTimeout(300)
   views.end = await fit(q); await q.screenshot({ path: `${ROOT}/shots/fit-${name}-end.png` })
   for (const [v, r] of Object.entries(views)) await t(`一画面に収まる ${name} ${w}x${h} ${v}`, async () => { expect(!r.over.length, JSON.stringify(r)) })
@@ -229,7 +266,7 @@ for (const [w, h, name] of SIZES) {
 await browser.close()
 
 // ---- WebKit（iPhone 相当）: 指でタップして全12面を解く
-const wb = await webkit.launch()
+const wb = await webkit.launch(MUTE_LAUNCH)
 const wp = await open(wb, { isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
 await t('WebKit: 2本指の touchmove を止める', async () => {
   const r = await wp.evaluate(() => { const e = new Event('touchmove', { cancelable: true, bubbles: true }); Object.defineProperty(e, 'touches', { value: [{}, {}] }); document.body.dispatchEvent(e); return e.defaultPrevented })
@@ -244,7 +281,7 @@ await t('WebKit: 実際には無音（タップで音を鳴らしたあと）', 
 for (let i = 1; i < N; i++) {
   await t(`WebKit: ${i + 1}面を指で解く`, async () => { const r = await playLevel(wp, i, await wp.evaluate(i => window.LEVELS[i].solve, i), true); expect(r.state === 'clear', JSON.stringify(r)) })
 }
-await wp.screenshot({ path: `${ROOT}/shots/webkit-12.png` })
+await wp.screenshot({ path: `${ROOT}/shots/webkit-last.png` })
 await t('WebKit: エラーなし', async () => { expect(wp.errs.length === 0, wp.errs.join('|')) })
 await wb.close()
 server.kill()

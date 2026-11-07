@@ -1,3 +1,4 @@
+import './mute-auto.mjs'
 import { MUTE_LAUNCH, muteContext } from './mute.mjs'
 // 公開URLの確認。node live.mjs（ログインしていないブラウザで見る）。SKIPGH=1 で GitHub ページの確認を省く
 // pin-rescue pinr を置き換え、「遊びの通し」をゲームに合わせて書く
@@ -23,6 +24,21 @@ for (const [name, bt, opts] of [['chromium', chromium, {}], ['webkit', webkit, {
   await p.waitForFunction(() => pinr.sheet, null, { timeout: 20000 }).catch(() => errs.push('no result sheet'))
   out.push(`${name}: state=${await p.evaluate(() => pinr.w.state)} muteOk=${await p.evaluate(() => window.__muteOk())}`)
   await p.screenshot({ path: `shots/live-${name}.png` })
+  // ---- 上級の最終面を、本物の指・マウスで解く（実時間。落ち着くのを待ってから次のピン）
+  {
+    const last = await p.evaluate(() => { const i = window.LEVELS.length - 1; pinr.load(i, { button: false, variant: { tie: false } }); return i })
+    for (const id of await p.evaluate(i => window.LEVELS[i].solve, last)) {
+      if (await p.evaluate(() => pinr.w.state !== 'play')) break
+      await p.waitForTimeout(400)
+      const q = await p.evaluate(id => pinr.pinXY(id), id)
+      if (opts.hasTouch) await p.touchscreen.tap(q.x, q.y); else await p.mouse.click(q.x, q.y)
+      await p.waitForTimeout(500)
+      await p.waitForFunction(() => pinr.w.state !== 'play' || (pinr.w.quiet > 0.5 && !pinr.w.pins.some(q => q.pulling && !q.gone)), null, { timeout: 9000 }).catch(() => {})
+    }
+    await p.waitForFunction(() => pinr.sheet, null, { timeout: 20000 }).catch(() => errs.push('no sheet on last level'))
+    out.push(`${name}: level ${last + 1} state=${await p.evaluate(() => pinr.w.state + ' ' + pinr.w.collected + '/' + pinr.w.need)}`)
+    await p.screenshot({ path: `shots/live-${name}-last.png` })
+  }
   const og = await p.evaluate(async () => { const r = await fetch(document.querySelector('meta[property="og:image"]').content); return r.status + ' ' + r.headers.get('content-type') })
   out.push(`${name}: og=${og} errors=${errs.length ? errs.join(' | ') : 'none'}`)
   await b.close()

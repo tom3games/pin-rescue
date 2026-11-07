@@ -5,6 +5,7 @@ import vm from 'node:vm'
 const root = new URL('..', import.meta.url).pathname
 vm.runInThisContext(readFileSync(root + 'engine.js', 'utf8'))
 vm.runInThisContext(readFileSync(root + 'levels.js', 'utf8'))
+for (const f of (process.env.EXTRA || '').split(',').filter(Boolean)) vm.runInThisContext(readFileSync(f, 'utf8'))   // 作りかけの面（面づくり用）
 const E = globalThis.PinEngine, LV = globalThis.LEVELS
 const only = process.argv[2] ? [Number(process.argv[2]) - 1] : LV.map((_, i) => i)
 let bad = 0
