@@ -2,16 +2,18 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
+<script id="ghMove">if(location.hostname==='tom3games.github.io'){location.replace('https://tom3games.com/play/pin-rescue/'+location.search+location.hash)}</script>
+<link rel="canonical" href="https://tom3games.com/play/pin-rescue/">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>ピンを抜け！勇者と金貨 | ピン抜きパズル（無料・ブラウザ）</title>
 <meta name="description" content="ピンを抜いて金貨を勇者に届けるピン抜きパズル。水と溶岩で石を作り、魔物を沈め、爆弾で壁を壊し、氷を溶かす全30面（上級18面）。抜く順番をまちがえると、勇者が溶ける。ダウンロードなし・無料でブラウザから遊べる。">
 <meta property="og:type" content="website">
 <meta property="og:title" content="ピンを抜け！勇者と金貨">
 <meta property="og:description" content="ピンを抜く順番で、金貨が届くか、勇者が溶けるか。水・溶岩・魔物・爆弾・氷の全30面。ダウンロードなし・無料。">
-<meta property="og:image" content="https://tom3games.github.io/pin-rescue/og.png?v=2">
+<meta property="og:image" content="https://tom3games.com/play/pin-rescue/og.png?v=2">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:url" content="https://tom3games.github.io/pin-rescue/">
+<meta property="og:url" content="https://tom3games.com/play/pin-rescue/">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#1e1813">
 <link rel="icon" href="icon.png">
@@ -100,12 +102,12 @@ var errs=[];window.addEventListener('error',function(e){errs.push((e.message||(e
 window.addEventListener('unhandledrejection',function(e){errs.push('reject: '+String(e.reason&&e.reason.message||e.reason))});
 setTimeout(function(){if(window.__jsUp)return;var d=document.createElement('div');d.id='bootErr';d.textContent='起動できませんでした / failed to start\n'+(errs.join('\n')||'(no error captured)')+'\n'+navigator.userAgent;document.body.appendChild(d)},15000)})();
 </script>
-<script src="tm.js?v=1" data-game="pin-rescue"></script>
+<script src="tm.js?v=2" data-game="pin-rescue"></script>
 <script src="sfx.js?v=1" onload="__bootStep()"></script>
 <script src="data.js?v=2" onload="__bootStep()"></script>
 <script src="engine.js?v=2" onload="__bootStep()"></script>
 <script src="levels.js?v=2" onload="__bootStep()"></script>
 <script src="game.js?v=2"></script>
-<script src="support.js?v=3" data-ja="金貨1枚" data-en="a gold coin"></script>
+<script src="support.js?v=4" data-ja="金貨1枚" data-en="a gold coin"></script>
 </body>
 </html>
