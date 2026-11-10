@@ -103,7 +103,7 @@ window.addEventListener('unhandledrejection',function(e){errs.push('reject: '+St
 setTimeout(function(){if(window.__jsUp)return;var d=document.createElement('div');d.id='bootErr';d.textContent='起動できませんでした / failed to start\n'+(errs.join('\n')||'(no error captured)')+'\n'+navigator.userAgent;document.body.appendChild(d)},15000)})();
 </script>
 <script src="tm.js?v=2" data-game="pin-rescue"></script>
-<script src="sfx.js?v=1" onload="__bootStep()"></script>
+<script src="sfx.js?v=2" onload="__bootStep()"></script>
 <script src="data.js?v=2" onload="__bootStep()"></script>
 <script src="engine.js?v=2" onload="__bootStep()"></script>
 <script src="levels.js?v=2" onload="__bootStep()"></script>
