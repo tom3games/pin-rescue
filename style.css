@@ -18,7 +18,7 @@ main button,main a,main #grid,main .how{pointer-events:auto}
 .sub{min-height:44px;padding:0 14px;border:1.5px solid rgba(244,234,216,.55);border-radius:8px;background:rgba(20,15,11,.72);color:var(--ink);font-size:15px;font-weight:700;display:inline-flex;align-items:center;text-decoration:none}
 
 /* タイトル */
-#vTitle{justify-content:space-between;padding:max(34px,env(safe-area-inset-top)) 16px max(22px,env(safe-area-inset-bottom))}
+#vTitle{justify-content:space-between;padding:max(34px,env(safe-area-inset-top)) 16px max(22px,calc(env(safe-area-inset-bottom) + var(--inapp-bot,0px)))}
 .logo{text-align:center;margin-top:1svh;transform:rotate(-2deg);position:relative;z-index:1}
 .logo .l1{display:inline-block;font-family:"RocknRoll One",sans-serif;font-size:20px;background:#fff;color:#111;padding:2px 10px 3px;transform:rotate(-1deg)}
 .logo h1{font-family:"RocknRoll One",sans-serif;font-weight:400;white-space:nowrap;font-size:min(18vw,84px);line-height:1.05;color:var(--gold);-webkit-text-stroke:7px var(--line);paint-order:stroke fill;letter-spacing:.02em;filter:drop-shadow(0 5px 0 #000)}
@@ -77,7 +77,7 @@ main button,main a,main #grid,main .how{pointer-events:auto}
 @keyframes poke{0%,100%{transform:translate(0,0)}50%{transform:translate(-6px,-8px)}}
 
 /* 決着（ドキュメンタリーの字幕） */
-#sheet{position:fixed;left:0;right:0;bottom:0;padding:0 16px max(18px,env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:10px;pointer-events:none}
+#sheet{position:fixed;left:0;right:0;bottom:0;padding:0 16px max(18px,calc(env(safe-area-inset-bottom) + var(--inapp-bot,0px)));display:flex;flex-direction:column;align-items:center;gap:10px;pointer-events:none}
 #sheet .sbtns{display:flex;flex-direction:column;align-items:center;gap:10px;pointer-events:auto}
 #narr{font-family:"Shippori Mincho B1",serif;font-weight:600;font-size:18px;line-height:1.5;color:#fff;background:rgba(0,0,0,.78);padding:8px 14px;text-align:center;max-width:100%}
 #stamp{position:fixed;left:50%;top:30%;transform:translate(-50%,-50%) rotate(-8deg);font-family:"RocknRoll One",sans-serif;font-size:min(13vw,56px);line-height:1.1;text-align:center;white-space:nowrap;color:#ffe14a;-webkit-text-stroke:8px #000;paint-order:stroke fill;filter:drop-shadow(0 6px 0 #000)}
